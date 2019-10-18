@@ -8,6 +8,7 @@ import freetype
 
 const (
 	BlockSize = 20 // pixels
+	Offset = BlockSize / 4
 	FieldHeight = 8
 	FieldWidth = 8
 	WinWidth = BlockSize * FieldWidth
@@ -17,24 +18,24 @@ const (
 
 	// n for knight (k for king)
 	pieces = {
-		'kw': '♔',
-		'qw': '♕',
-		'rw': '♖',
-		'bw': '♗',
-		'nw': '♘',
-		'pw': '♙',
-		'kb': '♚',
-		'qb': '♛',
-		'rb': '♜',
-		'bb': '♝',
-		'nb': '♞',
-		'pb': '♟'
+		'kb': '♔',
+		'qb': '♕',
+		'rb': '♖',
+		'bb': '♗',
+		'nb': '♘',
+		'pb': '♙',
+		'kw': '♚',
+		'qw': '♛',
+		'rw': '♜',
+		'bw': '♝',
+		'nw': '♞',
+		'pw': '♟'
 	}
 
 	text_cfg = gx.TextCfg{
-		align:gx.ALIGN_LEFT
-		size:TextSize
-		color:gx.rgb(0, 0, 0)
+		align: gx.ALIGN_LEFT
+		size:  TextSize
+		color: gx.rgb(0, 0, 0)
 	}
 )
 
@@ -178,13 +179,14 @@ fn (g Game) str() string {
 	return s
 }
 
-fn (g Game) draw_square(s Square) {
+fn (g mut Game) draw_square(s Square) {
 	g.gg.draw_rect((s.y - 1) * BlockSize, (s.x - 1) * BlockSize,
-		BlockSize - 1, BlockSize - 1, to_color(s.color))
-	g.ft.draw_text(1, )
+					BlockSize - 1, BlockSize - 1, to_color(s.color))
+	g.ft.draw_text((s.y - 1) * BlockSize + Offset, (s.x - 1) * BlockSize + Offset, 
+					pieces[s.piece.typ], text_cfg)
 }
 
-fn (g Game) render() {
+fn (g mut Game) render() {
 	for row in g.board {
 		for sq in row {
 			g.draw_square(sq)
