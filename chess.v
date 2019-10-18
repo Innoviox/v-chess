@@ -207,8 +207,16 @@ fn (g Game) run() {
 	}
 }
 
-fn onclick(wnd voidptr, key, code, action, mods int) {
-	println('$key, $code, $action, $mods')
+fn onclick(wnd voidptr, click, off int) {
+	match click {
+		0 => { print("Left click: ") }
+		1 => { print("Right click: ") }
+	}
+
+	match off {
+		0 => { println("off.") }
+		1 => { println("on.") }
+	}
 }
 
 fn main() {
