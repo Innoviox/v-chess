@@ -114,7 +114,7 @@ fn (p Piece) str() string {
 fn (p Piece) color() Color_ {
 	match pieces[p.typ][1].str() {
 		'b' => { return .black }
-		'w' => { return .white }
+		else => { return .white }
 	}
 }
 
@@ -148,7 +148,7 @@ fn (a []Square) contains (s Square) bool {
 }
 
 const (	
-	click_off = Square{x: -1, y: -1}
+	click_off = Square{x: -1, y: -1, piece: Piece{typ: ' '}}
 )
 
 struct Move {
@@ -228,13 +228,14 @@ fn make_negs(l [][]int) [][]int {
 }
 
 fn (g Game) moves(s Square) []Square {
-	ret := []Square
-	mut moves := [[]int]	
+	mut ret := []Square
+	mut moves := map[string][][]int
+
 	match s.piece.typ[0].str() {
 		' ' => { return ret }
 		'k' => { moves = make_negs([[1, 0], [0, 1], [1, 1]])}
 		'q' => { 
-			for i := 0; i < 8; i++ {
+			for i := 1; i < 8; i++ {
 				moves << [i, 0]
 				moves << [0, i]			
 				moves << [i, i]	
@@ -242,14 +243,14 @@ fn (g Game) moves(s Square) []Square {
 			moves = make_negs(moves)
 		}
 		'r' => { 
-			for i := 0; i < 8; i++ {
+			for i := 1; i < 8; i++ {
 				moves << [i, 0]
 				moves << [0, i]
 			}
 			moves = make_negs(moves)
 		}
 		'b' => { 
-			for i := 0; i < 8; i++ {
+			for i := 1; i < 8; i++ {
 				moves << [i, i]
 			}
 			moves = make_negs(moves)
@@ -263,6 +264,16 @@ fn (g Game) moves(s Square) []Square {
 			}
 		}
 	}
+	for i := 1; i < moves.len; i++ {
+		x := s.x + moves[i][0]
+		y := s.y + moves[i][1]
+		if 0 <= x && x < 8 && 0 <= y && y < 8 {
+			ret << g.board[x][y]
+		}
+	}
+
+	println(ret)
+
 	return ret
 }
 
@@ -304,7 +315,7 @@ fn (g Game) run() {
 
 fn (g mut Game) handle_select() {
 	// TODO: add things to highlighted
-	g.highlighted = []Square
+	g.highlighted = g.moves(g.selected)
 }
 
 fn on_move(wnd voidptr, x, y f64) {
@@ -331,6 +342,8 @@ fn on_click(wnd voidptr, click, on int) {
 		} else {
 			game.selected = click_off
 		}
+
+		game.handle_select()
 	}
 }
 
