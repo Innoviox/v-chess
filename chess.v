@@ -55,26 +55,11 @@ fn str(c Color) string {
  Describe a piece object.
 */
 struct Piece {
-mut:
-	typ int
-	color Color
+	mut: typ string
 }
 
-/*
- Since there are no globals, each Piece would have
- had to hold its own piece -> str map (inefficient),
- so we lose the "builtin" str method".
-*/
-fn (p Piece) str(p_map map[string]int) string {
-	if p.typ == 0 { // no piece on square, render square beneath
-		return p.color.str()
-	}
-
-	s := rev_map(p.p_map, p.typ) or {
-		return ' ${p.typ.str()} ' // error happened here, show typ for debugging
-	}
-
-	return s
+fn (p Piece) str() string {
+	return p.typ
 }
 
 
@@ -90,7 +75,10 @@ mut:
 }
 
 fn (s Square) str() string {
-	return s.piece.str()
+	if s.piece.typ != ' ' {
+		return s.piece.str()
+	}
+	return str(s.color)
 }
 
 struct Move {
@@ -106,12 +94,44 @@ mut:
 	
 }
 
-fn (g mut Game) initialize_game(pieces [][]Piece) {
-	mut color := Color.black
+fn (g mut Game) initialize_game() {
+	mut pieces := map[string]string
+	pieces['kw'] = '♔'
+	pieces['qw'] = '♕'
+	pieces['rw'] = '♖'
+	pieces['bw'] = '♗'
+	pieces['nw'] = '♘' // n for knight (k for king)
+	pieces['pw'] = '♙'
+
+	pieces['kb'] = '♚'
+	pieces['qb'] = '♛'
+	pieces['rb'] = '♜'
+	pieces['bb'] = '♝'
+	pieces['nb'] = '♞' 
+	pieces['pb'] = '♟'
+
+	mut board := map[string]string
+	board['0'] = 'rnbqkbnr'
+	board['1'] = 'pppppppp'
+	board['6'] = 'pppppppp'
+	board['7'] = 'rnbqkbnr'
+
+	mut r_to_c := map[string]string
+	r_to_c['0'] = 'b'
+	r_to_c['1'] = 'b'
+	r_to_c['6'] = 'w'
+	r_to_c['7'] = 'w'
+
+	mut color := Color.white
 	for x := 0; x < 8; x++ {
 		g.board << []Square
 		for y := 0; y < 8; y++ {
-			g.board[x] << Square{x: x, y: y, color: color}
+			mut p := Piece{typ: ''}
+			sx := x.str()
+			if sx in board {
+				p.typ = pieces[board[sx][y].str() + r_to_c[sx]]
+			}
+			g.board[x] << Square{x: x, y: y, color: color, piece: p}
 			color = flip(color)
 		}
 		color = flip(color)
@@ -135,8 +155,7 @@ fn (g Game) str() string {
 
 
 fn main() {
-
-	mut game := Game{pieces: pieces}
+	mut game := Game{}
 	game.initialize_game()
 
 	println(game)
