@@ -7,8 +7,9 @@ import time
 import freetype
 
 const (
-	BlockSize = 20 // pixels
-	Offset = BlockSize / 4
+	BlockSize = 60 // pixels
+	T_OffsetX = BlockSize / 4 // offset for text
+	T_OffsetY = BlockSize / 2
 	FieldHeight = 8
 	FieldWidth = 8
 	WinWidth = BlockSize * FieldWidth
@@ -182,7 +183,7 @@ fn (g Game) str() string {
 fn (g mut Game) draw_square(s Square) {
 	g.gg.draw_rect((s.y) * BlockSize, (s.x) * BlockSize,
 					BlockSize - 1, BlockSize - 1, to_color(s.color))
-	g.ft.draw_text((s.y) * BlockSize + Offset, (s.x) * BlockSize + Offset, 
+	g.ft.draw_text((s.y) * BlockSize + T_OffsetX, (s.x) * BlockSize + T_OffsetY, 
 					pieces[s.piece.typ], text_cfg)
 }
 
@@ -206,6 +207,10 @@ fn (g Game) run() {
 	}
 }
 
+fn onclick(wnd voidptr, key, code, action, mods int) {
+	println('$key, $code, $action, $mods')
+}
+
 fn main() {
 	glfw.init_glfw()
 
@@ -224,12 +229,14 @@ fn main() {
 		width: WinWidth
 		height: WinHeight
 		use_ortho: true
-		font_size: 18
+		font_size: 54
 		scale: 2
 	})
 
 	game.gg.window.set_user_ptr(&game)
 	game.initialize_game()
+
+	game.gg.window.on_click(onclick)
 
 	go game.run()
 
