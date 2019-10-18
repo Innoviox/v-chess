@@ -41,6 +41,7 @@ const (
 
 	dark_white = gx.rgb(227, 225, 218)
 	dark_grey  = gx.rgb(145, 144, 141)
+	highlight  = gx.rgb(227, 230, 85)
 )
 /* 
  Utility to reverse a map, since int -> string maps 
@@ -110,6 +111,13 @@ fn (p Piece) str() string {
 	return ' ' + p.typ + ' '
 }
 
+fn (p Piece) color() Color_ {
+	match pieces[p.typ][1].str() {
+		'b' => { return .black }
+		'w' => { return .white }
+	}
+}
+
 
 /*
  Represents a square on the board
@@ -128,6 +136,15 @@ fn (s Square) str() string {
 
 fn (s Square) equals(other Square) bool {
 	return s.x == other.x && s.y == other.y
+}
+
+fn (a []Square) contains (s Square) bool {
+	for i in a {
+		if (i.equals(s)) {
+			return true
+		}
+	}
+	return false
 }
 
 const (	
@@ -170,7 +187,7 @@ fn (g mut Game) initialize_game() {
 	for x := 0; x < 8; x++ {
 		g.board << []Square
 		for y := 0; y < 8; y++ {
-			mut p := Piece{typ: ''}
+			mut p := Piece{typ: ' '}
 			sx := x.str()
 			if sx in board {
 				p.typ = board[sx][y].str() + r_to_c[sx]
@@ -182,6 +199,7 @@ fn (g mut Game) initialize_game() {
 	}
 
 	g.selected = click_off
+	g.highlighted = []Square
 }
 
 fn (g Game) str() string {
@@ -198,16 +216,69 @@ fn (g Game) str() string {
 	return s
 }
 
+fn make_negs(l [][]int) [][]int {
+	mut ret := l
+	for i in l {
+		ret << [-i[0],  i[1]]
+		ret << [ i[0], -i[1]]
+		ret << [-i[0], -i[1]]
+		ret << [ i[0],  i[1]]
+	}
+	return l
+}
+
+fn (g Game) moves(s Square) []Square {
+	ret := []Square
+	mut moves := [[]int]	
+	match s.piece.typ[0].str() {
+		' ' => { return ret }
+		'k' => { moves = make_negs([[1, 0], [0, 1], [1, 1]])}
+		'q' => { 
+			for i := 0; i < 8; i++ {
+				moves << [i, 0]
+				moves << [0, i]			
+				moves << [i, i]	
+			}
+			moves = make_negs(moves)
+		}
+		'r' => { 
+			for i := 0; i < 8; i++ {
+				moves << [i, 0]
+				moves << [0, i]
+			}
+			moves = make_negs(moves)
+		}
+		'b' => { 
+			for i := 0; i < 8; i++ {
+				moves << [i, i]
+			}
+			moves = make_negs(moves)
+		}
+		'n' => { moves = make_negs([[2, 1], [1, 2]]) }
+		'p' => { 
+			moves << [0, 1]
+			if (s.piece.color() == .white && s.y == 1) || 
+			   (s.piece.color() == .black && s.y == 6) {
+				moves << [0, 2]
+			}
+		}
+	}
+	return ret
+}
+
 fn (g mut Game) draw_square(s Square) {
 	mut color := to_color(s.color)
 	mut _oy := T_OffsetY
-	if s.equals(g.selected) {
+	if s.equals(g.selected) && s.piece.typ != ' ' {
 		if s.color == .black {
 			color = dark_grey
 		} else {
 			color = dark_white
 		}
 		_oy -= 5
+		g.moves(s)
+	} else if s in g.highlighted {
+		color = highlight
 	}
 	g.gg.draw_rect((s.y) * BlockSize, (s.x) * BlockSize,
 					BlockSize - 1, BlockSize - 1, color)
@@ -231,8 +302,9 @@ fn (g Game) run() {
 	}
 }
 
-fn (g Game) handle_select() {
+fn (g mut Game) handle_select() {
 	// TODO: add things to highlighted
+	g.highlighted = []Square
 }
 
 fn on_move(wnd voidptr, x, y f64) {
