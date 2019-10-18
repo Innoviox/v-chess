@@ -59,7 +59,7 @@ struct Piece {
 }
 
 fn (p Piece) str() string {
-	return p.typ
+	return ' ' + p.typ + ' '
 }
 
 
@@ -75,10 +75,10 @@ mut:
 }
 
 fn (s Square) str() string {
-	if s.piece.typ != ' ' {
-		return s.piece.str()
-	}
-	return str(s.color)
+	// if s.piece.typ != '' {
+		// return 
+	// }
+	return str(s.color) + s.piece.str()
 }
 
 struct Move {
@@ -126,7 +126,7 @@ fn (g mut Game) initialize_game() {
 	for x := 0; x < 8; x++ {
 		g.board << []Square
 		for y := 0; y < 8; y++ {
-			mut p := Piece{typ: ''}
+			mut p := Piece{typ: ' '}
 			sx := x.str()
 			if sx in board {
 				p.typ = pieces[board[sx][y].str() + r_to_c[sx]]
@@ -140,7 +140,7 @@ fn (g mut Game) initialize_game() {
 
 fn (g Game) str() string {
 	mut s := ''
-	spacer := '-'.repeat(g.board.len * 5)
+	spacer := '-'.repeat(g.board.len * 8)
 	for i := 0; i < g.board.len; i++ {
 		s += spacer + '\n'
 		for sq in g.board[i] {
