@@ -91,7 +91,7 @@ fn str(c Color_) string {
 
 fn to_color(c Color_) gx.Color {
 	match c {
-		.black => { return gx.rgb(0, 0, 0)}
+		.black => { return gx.rgb(168, 173, 170)}
 		else   => { return gx.rgb(255, 255, 255)}
 	}
 }
@@ -180,9 +180,9 @@ fn (g Game) str() string {
 }
 
 fn (g mut Game) draw_square(s Square) {
-	g.gg.draw_rect((s.y - 1) * BlockSize, (s.x - 1) * BlockSize,
+	g.gg.draw_rect((s.y) * BlockSize, (s.x) * BlockSize,
 					BlockSize - 1, BlockSize - 1, to_color(s.color))
-	g.ft.draw_text((s.y - 1) * BlockSize + Offset, (s.x - 1) * BlockSize + Offset, 
+	g.ft.draw_text((s.y) * BlockSize + Offset, (s.x) * BlockSize + Offset, 
 					pieces[s.piece.typ], text_cfg)
 }
 
