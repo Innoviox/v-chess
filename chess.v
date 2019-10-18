@@ -218,7 +218,7 @@ fn (g Game) str() string {
 	for i := 0; i < g.board.len; i++ {
 		s += spacer + '\n'
 		for sq in g.board[i] {
-			s += '|' + sq.str()
+			s += '| ' + pieces[sq.piece.typ] + ' '
 		}
 		s += '|\n'
 	}
@@ -308,6 +308,7 @@ fn (g Game) moves(s Square) []Square {
 			sw << of([-2, -1])
 		}
 		'p' => { 
+			// TODO: pawn caps
 			if s.piece.color() == .white {
 				nn << of([-1, 0])
 				if s.x == 6 {
@@ -401,9 +402,23 @@ fn on_click(wnd voidptr, click, on int) {
 		box_x := int(game.mouse_y / BlockSize)
 
 		if box_x != game.selected.x || box_y != game.selected.y {
-			row := game.board[box_x] // no multiindexing (gh issue?)
-			game.highlighted = []Square
-			game.selected = row[box_y]
+			hit := game.at([box_x, box_y]) or { panic(err) }
+			if hit in game.highlighted {
+				mut r := game.board[box_x]
+				r[box_y].piece.typ = game.selected.piece.typ
+
+				sx := game.selected.x 
+				sy := game.selected.y 
+				mut r2 := game.board[sx]
+				r2[sy].piece.typ = ' '
+
+				game.selected = click_off
+				game.highlighted = []Square
+			} else {
+				row := game.board[box_x] // no multiindexing (gh issue?)
+				game.highlighted = []Square
+				game.selected = row[box_y]
+			}
 		} else {
 			game.selected = click_off
 			game.highlighted = []Square
