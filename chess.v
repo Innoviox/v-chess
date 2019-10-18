@@ -19,18 +19,18 @@ const (
 
 	// n for knight (k for king)
 	pieces = {
-		'kb': '♔',
-		'qb': '♕',
-		'rb': '♖',
-		'bb': '♗',
-		'nb': '♘',
-		'pb': '♙',
-		'kw': '♚',
-		'qw': '♛',
-		'rw': '♜',
-		'bw': '♝',
-		'nw': '♞',
-		'pw': '♟'
+		'kw': '♔',
+		'qw': '♕',
+		'rw': '♖',
+		'bw': '♗',
+		'nw': '♘',
+		'pw': '♙',
+		'kb': '♚',
+		'qb': '♛',
+		'rb': '♜',
+		'bb': '♝',
+		'nb': '♞',
+		'pb': '♟'
 	}
 
 	text_cfg = gx.TextCfg{
@@ -38,8 +38,10 @@ const (
 		size:  TextSize
 		color: gx.rgb(0, 0, 0)
 	}
-)
 
+	dark_white = gx.rgb(227, 225, 218)
+	dark_grey  = gx.rgb(145, 144, 141)
+)
 /* 
  Utility to reverse a map, since int -> string maps 
  aren't available.
@@ -124,6 +126,14 @@ fn (s Square) str() string {
 	return str(s.color) + s.piece.str()
 }
 
+fn (s Square) equals(other Square) bool {
+	return s.x == other.x && s.y == other.y
+}
+
+const (	
+	click_off = Square{x: -1, y: -1}
+)
+
 struct Move {
 	piece int
 	sq Square
@@ -135,6 +145,12 @@ mut:
 	ft &freetype.Context
 	board [][]Square
 	history []Move
+
+	mouse_x f64
+	mouse_y f64
+
+	selected Square
+	highlighted []Square
 }
 
 fn (g mut Game) initialize_game() {
@@ -164,6 +180,8 @@ fn (g mut Game) initialize_game() {
 		}
 		color = flip(color)
 	}
+
+	g.selected = click_off
 }
 
 fn (g Game) str() string {
@@ -181,9 +199,19 @@ fn (g Game) str() string {
 }
 
 fn (g mut Game) draw_square(s Square) {
+	mut color := to_color(s.color)
+	mut _oy := T_OffsetY
+	if s.equals(g.selected) {
+		if s.color == .black {
+			color = dark_grey
+		} else {
+			color = dark_white
+		}
+		_oy -= 5
+	}
 	g.gg.draw_rect((s.y) * BlockSize, (s.x) * BlockSize,
-					BlockSize - 1, BlockSize - 1, to_color(s.color))
-	g.ft.draw_text((s.y) * BlockSize + T_OffsetX, (s.x) * BlockSize + T_OffsetY, 
+					BlockSize - 1, BlockSize - 1, color)
+	g.ft.draw_text((s.y) * BlockSize + T_OffsetX, (s.x) * BlockSize + _oy, 
 					pieces[s.piece.typ], text_cfg)
 }
 
@@ -198,24 +226,39 @@ fn (g mut Game) render() {
  
 fn (g Game) run() {
 	for {
-		// if g.state == .running {
-		// 	g.move_tetro()
-		// 	g.delete_completed_lines()
-		// }
 		glfw.post_empty_event() // force window redraw
 		time.sleep_ms(TimerPeriod)
 	}
 }
 
-fn onclick(wnd voidptr, click, off int) {
-	match click {
-		0 => { print("Left click: ") }
-		1 => { print("Right click: ") }
-	}
+fn (g Game) handle_select() {
+	// TODO: add things to highlighted
+}
 
-	match off {
-		0 => { println("off.") }
-		1 => { println("on.") }
+fn on_move(wnd voidptr, x, y f64) {
+	mut game := &Game(glfw.get_window_user_pointer(wnd))
+
+	game.mouse_x = x
+	game.mouse_y = y
+}
+/*
+ Access click method
+ :param click button (0: left, 1: right, etc)
+ :param on 0 -> off, 1 -> on
+*/
+fn on_click(wnd voidptr, click, on int) {
+	if on == 1 && click == 0 {
+		mut game := &Game(glfw.get_window_user_pointer(wnd))
+
+		box_y := int(game.mouse_x / BlockSize)
+		box_x := int(game.mouse_y / BlockSize)
+
+		if box_x != game.selected.x || box_y != game.selected.y {
+			row := game.board[box_x] // no multiindexing (gh issue?)
+			game.selected = row[box_y]
+		} else {
+			game.selected = click_off
+		}
 	}
 }
 
@@ -244,7 +287,8 @@ fn main() {
 	game.gg.window.set_user_ptr(&game)
 	game.initialize_game()
 
-	game.gg.window.on_click(onclick)
+	game.gg.window.on_click(on_click)
+	game.gg.window.onmousemove(on_move)
 
 	go game.run()
 
