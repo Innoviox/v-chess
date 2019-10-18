@@ -118,7 +118,7 @@ fn (p Piece) str() string {
 }
 
 fn (p Piece) color() Color_ {
-	match pieces[p.typ][1].str() {
+	match p.typ[1].str() {
 		'b' => { return .black }
 		else => { return .white }
 	}
@@ -226,9 +226,12 @@ fn (g Game) str() string {
 	return s
 }
 
-fn (g Game) at(i []int) Square {
-	r := g.board[i[0]]
-	return r[i[1]]
+fn (g Game) at(i []int) ?Square {
+	if 0 <= i[0] && i[0] < 8 && 0 <= i[1] && i[1] < 8 {
+		r := g.board[i[0]]
+		return r[i[1]]
+	}
+	return error("$i out of bounds")
 }
 
 struct Position {
@@ -247,73 +250,85 @@ fn of(i []int) Position {
 
 fn (g Game) moves(s Square) []Square {
 	mut ret := []Square
-	mut moves := map[string][]Position
-
-	// for i in directions {
-	// 	moves[i] = [Position{x: 0, y: 0}]
-	// }
+	
+	// String -> Array dictionaries don't work for some reason
+	mut nn := []Position
+	mut ne := []Position
+	mut ee := []Position
+	mut se := []Position
+	mut ss := []Position
+	mut sw := []Position
+	mut ww := []Position
+	mut nw := []Position
 
 	match s.piece.typ[0].str() {
 		' ' => { return ret }
 		'k' => {
-			moves['nn'] << of([0, 1])
-			moves['ne'] << of([1, 1])
-			moves['ee'] << of([1, 0])
-			moves['se'] << of([1, -1])
-			moves['ss'] << of([0, -1])
-			moves['sw'] << of([-1, -1])
-			moves['ww'] << of([-1, 0])
-			moves['nw'] << of([-1, 1])
+			nn << of([0, 1])
+			ne << of([1, 1])
+			ee << of([1, 0])
+			se << of([1, -1])
+			ss << of([0, -1])
+			sw << of([-1, -1])
+			ww << of([-1, 0])
+			nw << of([-1, 1])
 		}
 		'q' => { 
 			for i := 1; i < 8; i++ {
-				moves['nn'] << of([0, i])
-				moves['ne'] << of([i, i])
-				moves['ee'] << of([i, 0])
-				moves['se'] << of([i, -i])
-				moves['ss'] << of([0, -i])
-				moves['sw'] << of([-i, -i])
-				moves['ww'] << of([-i, 0])
-				moves['nw'] << of([-i, i])
+				nn << of([0, i])
+				ne << of([i, i])
+				ee << of([i, 0])
+				se << of([i, -i])
+				ss << of([0, -i])
+				sw << of([-i, -i])
+				ww << of([-i, 0])
+				nw << of([-i, i])
 			}
 		}
 		'r' => { 
 			for i := 1; i < 8; i++ {
-				moves['nn'] << of([0, i])
-				moves['ee'] << of([i, 0])
-				moves['ss'] << of([0, -i])
-				moves['ww'] << of([-i, 0])
+				nn << of([0, i])
+				ee << of([i, 0])
+				ss << of([0, -i])
+				ww << of([-i, 0])
 			}
 		}
 		'b' => { 
 			for i := 1; i < 8; i++ {
-				moves['ne'] << of([i, i])
-				moves['se'] << of([i, -i])
-				moves['sw'] << of([-i, -i])
-				moves['nw'] << of([-i, i])
+				ne << of([i, i])
+				se << of([i, -i])
+				sw << of([-i, -i])
+				nw << of([-i, i])
 			}
 		}
 		'n' => {
-			moves['ne'] << of([2, 1])
-			moves['nw'] << of([-2, 1])
-			moves['se'] << of([2, -1])
-			moves['sw'] << of([-2, -2])
+			ne << of([2, 1])
+			nw << of([-2, 1])
+			se << of([2, -1])
+			sw << of([-2, -1])
 		}
 		'p' => { 
-			moves['nn'] << of([0, 1])
-			if (s.piece.color() == .white && s.y == 1) || 
-			   (s.piece.color() == .black && s.y == 6) {
-				moves['nn'] << of([0, 2])
+			if s.piece.color() == .white {
+				nn << of([-1, 0])
+				if s.x == 6 {
+					nn << of([-2, 0])
+				}
+			} else {
+				nn << of([1, 0])
+				if s.x == 1 {
+					nn << of([2, 0])
+				}
 			}
 		}
 	}
-	for i in directions {
-		if !(i in moves) { continue }
-		for m in moves[i] {
-			hit := g.at([s.x + m.x, s.y + m.y])
+	for i in [nn, ne, ee, se, ss, sw, ww, nw] {
+		for m in i {
+			hit := g.at([s.x + m.x, s.y + m.y]) or {
+				break
+			}
 			if hit.piece.typ == ' ' {
 				ret << hit
-			} else if hit.piece.color() == s.piece.color() {
+			} else if hit.piece.color() != s.piece.color() {
 				ret << hit
 				break
 			} else {
@@ -387,6 +402,7 @@ fn on_click(wnd voidptr, click, on int) {
 
 		if box_x != game.selected.x || box_y != game.selected.y {
 			row := game.board[box_x] // no multiindexing (gh issue?)
+			game.highlighted = []Square
 			game.selected = row[box_y]
 		} else {
 			game.selected = click_off
