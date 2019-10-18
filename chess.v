@@ -42,6 +42,8 @@ const (
 	dark_white = gx.rgb(227, 225, 218)
 	dark_grey  = gx.rgb(145, 144, 141)
 	highlight  = gx.rgb(227, 230, 85)
+	
+	directions = ['nn', 'ne', 'ee', 'se', 'ss', 'sw', 'ww', 'nw']
 )
 /* 
  Utility to reverse a map, since int -> string maps 
@@ -59,6 +61,10 @@ fn rev_map(m map[string]int v int) ?string {
 		}
 	}
 	return error("Key for value $v not found")
+}
+
+fn add(a []int, b []int) []int {
+	return [a[0] + b[0], a[1] + b[1]]
 }
 
 /*
@@ -147,6 +153,10 @@ fn (a []Square) contains (s Square) bool {
 	return false
 }
 
+fn (s Square) +(b []int) []int {
+	return add([s.x, s.y], b)
+}
+
 const (	
 	click_off = Square{x: -1, y: -1, piece: Piece{typ: ' '}}
 )
@@ -216,63 +226,101 @@ fn (g Game) str() string {
 	return s
 }
 
-fn make_negs(l [][]int) [][]int {
-	mut ret := l
-	for i in l {
-		ret << [-i[0],  i[1]]
-		ret << [ i[0], -i[1]]
-		ret << [-i[0], -i[1]]
-		ret << [ i[0],  i[1]]
-	}
-	return l
+fn (g Game) at(i []int) Square {
+	r := g.board[i[0]]
+	return r[i[1]]
+}
+
+struct Position {
+	mut: 
+	x int
+	y int
+}
+
+fn (p Position) str() string {
+	return '($p.x, $p.y)'
+}
+
+fn of(i []int) Position {
+	return Position{x: i[0], y: i[1]}
 }
 
 fn (g Game) moves(s Square) []Square {
 	mut ret := []Square
-	mut moves := map[string][][]int
+	mut moves := map[string][]Position
+
+	// for i in directions {
+	// 	moves[i] = [Position{x: 0, y: 0}]
+	// }
 
 	match s.piece.typ[0].str() {
 		' ' => { return ret }
-		'k' => { moves = make_negs([[1, 0], [0, 1], [1, 1]])}
+		'k' => {
+			moves['nn'] << of([0, 1])
+			moves['ne'] << of([1, 1])
+			moves['ee'] << of([1, 0])
+			moves['se'] << of([1, -1])
+			moves['ss'] << of([0, -1])
+			moves['sw'] << of([-1, -1])
+			moves['ww'] << of([-1, 0])
+			moves['nw'] << of([-1, 1])
+		}
 		'q' => { 
 			for i := 1; i < 8; i++ {
-				moves << [i, 0]
-				moves << [0, i]			
-				moves << [i, i]	
+				moves['nn'] << of([0, i])
+				moves['ne'] << of([i, i])
+				moves['ee'] << of([i, 0])
+				moves['se'] << of([i, -i])
+				moves['ss'] << of([0, -i])
+				moves['sw'] << of([-i, -i])
+				moves['ww'] << of([-i, 0])
+				moves['nw'] << of([-i, i])
 			}
-			moves = make_negs(moves)
 		}
 		'r' => { 
 			for i := 1; i < 8; i++ {
-				moves << [i, 0]
-				moves << [0, i]
+				moves['nn'] << of([0, i])
+				moves['ee'] << of([i, 0])
+				moves['ss'] << of([0, -i])
+				moves['ww'] << of([-i, 0])
 			}
-			moves = make_negs(moves)
 		}
 		'b' => { 
 			for i := 1; i < 8; i++ {
-				moves << [i, i]
+				moves['ne'] << of([i, i])
+				moves['se'] << of([i, -i])
+				moves['sw'] << of([-i, -i])
+				moves['nw'] << of([-i, i])
 			}
-			moves = make_negs(moves)
 		}
-		'n' => { moves = make_negs([[2, 1], [1, 2]]) }
+		'n' => {
+			moves['ne'] << of([2, 1])
+			moves['nw'] << of([-2, 1])
+			moves['se'] << of([2, -1])
+			moves['sw'] << of([-2, -2])
+		}
 		'p' => { 
-			moves << [0, 1]
+			moves['nn'] << of([0, 1])
 			if (s.piece.color() == .white && s.y == 1) || 
 			   (s.piece.color() == .black && s.y == 6) {
-				moves << [0, 2]
+				moves['nn'] << of([0, 2])
 			}
 		}
 	}
-	for i := 1; i < moves.len; i++ {
-		x := s.x + moves[i][0]
-		y := s.y + moves[i][1]
-		if 0 <= x && x < 8 && 0 <= y && y < 8 {
-			ret << g.board[x][y]
+	for i in directions {
+		if !(i in moves) { continue }
+		for m in moves[i] {
+			hit := g.at([s.x + m.x, s.y + m.y])
+			if hit.piece.typ == ' ' {
+				ret << hit
+			} else if hit.piece.color() == s.piece.color() {
+				ret << hit
+				break
+			} else {
+				break
+			}
 		}
 	}
-
-	println(ret)
 
 	return ret
 }
@@ -314,8 +362,9 @@ fn (g Game) run() {
 }
 
 fn (g mut Game) handle_select() {
-	// TODO: add things to highlighted
-	g.highlighted = g.moves(g.selected)
+	if g.highlighted.len == 0 {	
+		g.highlighted = g.moves(g.selected)
+	}
 }
 
 fn on_move(wnd voidptr, x, y f64) {
@@ -341,6 +390,7 @@ fn on_click(wnd voidptr, click, on int) {
 			game.selected = row[box_y]
 		} else {
 			game.selected = click_off
+			game.highlighted = []Square
 		}
 
 		game.handle_select()
