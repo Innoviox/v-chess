@@ -314,13 +314,17 @@ fn (g Game) moves(s Square) []Square {
 				if s.x == 6 {
 					nn << of([-2, 0])
 				}
-				for m in [[-1, -1], [-1, 1]] {
-					hit := g.at([s.x + m[0], s.y + m[1]]) or { break }
-					if hit.piece.typ != ' ' {
-						if hit.piece.color() != s.piece.color() {
-							println(hit)
-							nw << of(m)
-						}
+				hit := g.at([s.x - 1, s.y - 1]) or { panic(err) }
+				if hit.piece.typ != ' ' {
+					if hit.piece.color() != s.piece.color() {
+						nw << of([-1, -1])
+					}
+				}
+				
+				hit2 := g.at([s.x - 1, s.y + 1]) or { panic(err) }
+				if hit2.piece.typ != ' ' {
+					if hit2.piece.color() != s.piece.color() {
+						ne << of([-1, 1])
 					}
 				}
 			} else {
@@ -328,12 +332,17 @@ fn (g Game) moves(s Square) []Square {
 				if s.x == 1 {
 					nn << of([2, 0])
 				}
-				for m in [[1, -1], [1, 1]] {
-					hit := g.at([s.x + m[0], s.y + m[1]]) or { break }
-					if hit.piece.typ != ' ' {
-						if hit.piece.color() != s.piece.color() {
-							sw << of(m)
-						}
+				hit := g.at([s.x + 1, s.y - 1]) or { panic(err) }
+				if hit.piece.typ != ' ' {
+					if hit.piece.color() != s.piece.color() {
+						nw << of([-1, -1])
+					}
+				}
+				
+				hit2 := g.at([s.x + 1, s.y + 1]) or { panic(err) }
+				if hit2.piece.typ != ' ' {
+					if hit2.piece.color() != s.piece.color() {
+						ne << of([-1, 1])
 					}
 				}
 			}
@@ -346,7 +355,8 @@ fn (g Game) moves(s Square) []Square {
 			}
 			if hit.piece.typ == ' ' {
 				ret << hit
-			} else if hit.piece.color() != s.piece.color() {
+			} else if hit.piece.color() != s.piece.color() && 
+				!(s.piece.typ[0].str() == 'p' && m.y == 0) {
 				ret << hit
 				break
 			} else {
