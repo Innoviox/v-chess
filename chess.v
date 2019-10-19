@@ -12,7 +12,7 @@ const (
 	T_OffsetY = BlockSize / 2
 	FieldHeight = 8
 	FieldWidth = 8
-	WinWidth = BlockSize * FieldWidth
+	WinWidth = BlockSize * (FieldWidth + 4)
 	WinHeight = BlockSize * FieldHeight
 	TimerPeriod = 250 // ms
 	TextSize = 12
@@ -44,6 +44,8 @@ const (
 	highlight  = gx.rgb(227, 230, 85)
 	
 	directions = ['nn', 'ne', 'ee', 'se', 'ss', 'sw', 'ww', 'nw']
+
+	rows = 'abcdefgh'
 )
 /* 
  Utility to reverse a map, since int -> string maps 
@@ -137,7 +139,8 @@ mut:
 }
 
 fn (s Square) str() string {
-	return str(s.color) + s.piece.str()
+	return rows[s.x].str() + s.y.str()
+	// return str(s.color) + s.piece.str()
 }
 
 fn (s Square) equals(other Square) bool {
@@ -162,8 +165,13 @@ const (
 )
 
 struct Move {
-	piece int
-	sq Square
+	piece Piece
+	from Square
+	to Square
+}
+
+fn (m Move) str() string {
+	return m.piece.typ[0].str() + m.to.str()
 }
 
 struct Game {	
@@ -394,6 +402,15 @@ fn (g mut Game) render() {
 			g.draw_square(sq)
 		}
 	}
+
+	g.ft.draw_text(BlockSize * 8, BlockSize, "Moves", text_cfg)
+
+	mut i := 1
+	for move in g.history {
+		i += 1
+		g.ft.draw_text(BlockSize * (8), BlockSize * (i), move.str(), text_cfg)
+	}
+
 	g.gg.render()
 }
  
@@ -438,6 +455,12 @@ fn on_click(wnd voidptr, click, on int) {
 				sy := game.selected.y 
 				mut r2 := game.board[sx]
 				r2[sy].piece.typ = ' '
+
+				game.history << Move{
+					piece: game.selected.piece,
+					from: r2[sy],
+					to: r[box_y],
+				}
 
 				game.selected = click_off
 				game.highlighted = []Square
