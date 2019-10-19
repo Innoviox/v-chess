@@ -408,7 +408,9 @@ fn (g mut Game) render() {
 	mut i := 1
 	for move in g.history {
 		i += 1
-		g.ft.draw_text(BlockSize * (8), BlockSize * (i), move.str(), text_cfg)
+		x := 8 + 2 * (i % 2)
+		y := i / 2 + 1
+		g.ft.draw_text(BlockSize * x, BlockSize * y, move.str(), text_cfg)
 	}
 
 	g.gg.render()
