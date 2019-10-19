@@ -314,10 +314,27 @@ fn (g Game) moves(s Square) []Square {
 				if s.x == 6 {
 					nn << of([-2, 0])
 				}
+				for m in [[-1, -1], [-1, 1]] {
+					hit := g.at([s.x + m[0], s.y + m[1]]) or { break }
+					if hit.piece.typ != ' ' {
+						if hit.piece.color() != s.piece.color() {
+							println(hit)
+							nw << of(m)
+						}
+					}
+				}
 			} else {
 				nn << of([1, 0])
 				if s.x == 1 {
 					nn << of([2, 0])
+				}
+				for m in [[1, -1], [1, 1]] {
+					hit := g.at([s.x + m[0], s.y + m[1]]) or { break }
+					if hit.piece.typ != ' ' {
+						if hit.piece.color() != s.piece.color() {
+							sw << of(m)
+						}
+					}
 				}
 			}
 		}
