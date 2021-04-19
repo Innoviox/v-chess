@@ -7,48 +7,49 @@ import time
 // import freetype
 
 const (
-	block_size = 60 // pixels
-	t_offset_x = block_size / 4 // offset for text
-	t_offset_y = block_size / 2
+	block_size   = 60 // pixels
+	t_offset_x   = block_size / 4 // offset for text
+	t_offset_y   = block_size / 2
 	field_height = 8
-	field_width = 8
-	win_width = block_size * (field_width + 4)
-	win_height = block_size * field_height
-	time_period = 250 // ms
-	text_size = 12
+	field_width  = 8
+	win_width    = block_size * (field_width + 4)
+	win_height   = block_size * field_height
+	time_period  = 250 // ms
+	text_size    = 12
 
 	// n for knight (k for king)
-	pieces = {
-		'kw': '♔',
-		'qw': '♕',
-		'rw': '♖',
-		'bw': '♗',
-		'nw': '♘',
-		'pw': '♙',
-		'kb': '♚',
-		'qb': '♛',
-		'rb': '♜',
-		'bb': '♝',
-		'nb': '♞',
+	pieces       = map{
+		'kw': '♔'
+		'qw': '♕'
+		'rw': '♖'
+		'bw': '♗'
+		'nw': '♘'
+		'pw': '♙'
+		'kb': '♚'
+		'qb': '♛'
+		'rb': '♜'
+		'bb': '♝'
+		'nb': '♞'
 		'pb': '♟'
 	}
 
-	text_cfg = gx.TextCfg{
+	text_cfg     = gx.TextCfg{
 		align: .left
-		size:  text_size
+		size: text_size
 		color: gx.rgb(0, 0, 0)
 	}
 
-	dark_white = gx.rgb(227, 225, 218)
-	dark_grey  = gx.rgb(145, 144, 141)
-	highlight  = gx.rgb(227, 230, 85)
-	
-	directions = ['nn', 'ne', 'ee', 'se', 'ss', 'sw', 'ww', 'nw']
+	dark_white   = gx.rgb(227, 225, 218)
+	dark_grey    = gx.rgb(145, 144, 141)
+	highlight    = gx.rgb(227, 230, 85)
 
-	rows = 'abcdefgh'
+	directions   = ['nn', 'ne', 'ee', 'se', 'ss', 'sw', 'ww', 'nw']
+
+	rows         = 'abcdefgh'
 )
-/* 
- Utility to reverse a map, since int -> string maps 
+
+/*
+Utility to reverse a map, since int -> string maps
  aren't available.
 
  :param m map to reverse
@@ -62,7 +63,7 @@ fn rev_map(m map[string]int, v int) ?string {
 			return k
 		}
 	}
-	return error("Key for value $v not found")
+	return error('Key for value $v not found')
 }
 
 fn add(a []int, b []int) []int {
@@ -70,49 +71,51 @@ fn add(a []int, b []int) []int {
 }
 
 /*
- Simple enum to represent a color.
+Simple enum to represent a color.
  This enum represents the color of squares and pieces.
  Note that this must be named Color_ to avoid conflicting
  with glfw.Color (https://github.com/vlang/v/issues/2416)
 */
-enum Color_ { 
-	black white
+enum Color_ {
+	black
+	white
 }
 
 /*
- Flip a color (e.g. reverse its value; black -> white; white -> black)
+Flip a color (e.g. reverse its value; black -> white; white -> black)
  :param c color to flip
  :return Color flipped color
 */
 fn flip(c Color_) Color_ {
 	match c {
 		.black { return .white }
-		else   { return .black }
+		else { return .black }
 	}
 }
 
 /*
- Convert color to a string for output.
+Convert color to a string for output.
 */
 fn str(c Color_) string {
 	match c {
-		.black { return ' ⬛ '}
-		else   { return ' ⬜ '}
+		.black { return ' ⬛ ' }
+		else { return ' ⬜ ' }
 	}
 }
 
 fn to_color(c Color_) gx.Color {
 	match c {
-		.black { return gx.rgb(168, 173, 170)}
-		else   { return gx.rgb(255, 255, 255)}
+		.black { return gx.rgb(168, 173, 170) }
+		else { return gx.rgb(255, 255, 255) }
 	}
 }
 
 /*
- Describe a piece object.
+Describe a piece object.
 */
 struct Piece {
-	mut: typ string
+mut:
+	typ string
 }
 
 fn (p Piece) str() string {
@@ -126,13 +129,12 @@ fn (p Piece) color() Color_ {
 	}
 }
 
-
 /*
- Represents a square on the board
+Represents a square on the board
 */
 struct Square {
-	x int
-	y int
+	x     int
+	y     int
 	color Color_
 mut:
 	piece Piece
@@ -147,7 +149,7 @@ fn (s Square) equals(other Square) bool {
 	return s.x == other.x && s.y == other.y
 }
 
-fn (a []Square) contains (s Square) bool {
+fn (a []Square) contains(s Square) bool {
 	for i in a {
 		if i.equals(s) {
 			return true
@@ -156,46 +158,52 @@ fn (a []Square) contains (s Square) bool {
 	return false
 }
 
-fn (s Square) +(b []int) []int {
+fn (s Square) + (b []int) []int {
 	return add([s.x, s.y], b)
 }
 
-const (	
-	click_off = Square{x: -1, y: -1, piece: Piece{typ: ' '}}
+const (
+	click_off = Square{
+		x: -1
+		y: -1
+		piece: Piece{
+			typ: ' '
+		}
+	}
 )
 
 struct Move {
 	piece Piece
-	from Square
-	to Square
+	from  Square
+	to    Square
 }
 
 fn (m Move) str() string {
 	return m.piece.typ[0].str() + m.to.str()
 }
 
-struct Game {	
+struct Game {
 	gg &gg.Context = voidptr(0)
 mut:
 	// ft &freetype.Context
-	board [][]Square
+	board   [][]Square
 	history []Move
 
 	mouse_x f64
 	mouse_y f64
 
-	selected Square
+	selected    Square
 	highlighted []Square
 }
 
-fn (g mut Game) initialize_game() {
-	mut board := map[string]string
+fn (mut g Game) initialize_game() {
+	mut board := map[string]string{}
 	board['0'] = 'rnbqkbnr'
 	board['1'] = 'pppppppp'
 	board['6'] = 'pppppppp'
 	board['7'] = 'rnbqkbnr'
 
-	mut r_to_c := map[string]string
+	mut r_to_c := map[string]string{}
 	r_to_c['0'] = 'b'
 	r_to_c['1'] = 'b'
 	r_to_c['6'] = 'w'
@@ -203,21 +211,28 @@ fn (g mut Game) initialize_game() {
 
 	mut color := Color_.white
 	for x := 0; x < 8; x++ {
-		g.board << []Square
+		g.board << []Square{}
 		for y := 0; y < 8; y++ {
-			mut p := Piece{typ: ' '}
+			mut p := Piece{
+				typ: ' '
+			}
 			sx := x.str()
 			if sx in board {
 				p.typ = board[sx][y].str() + r_to_c[sx]
 			}
-			g.board[x] << Square{x: x, y: y, color: color, piece: p}
+			g.board[x] << Square{
+				x: x
+				y: y
+				color: color
+				piece: p
+			}
 			color = flip(color)
 		}
 		color = flip(color)
 	}
 
 	g.selected = click_off
-	g.highlighted = []Square
+	g.highlighted = []Square{}
 }
 
 fn (g Game) str() string {
@@ -239,11 +254,11 @@ fn (g Game) at(i []int) ?Square {
 		r := g.board[i[0]]
 		return r[i[1]]
 	}
-	return error("$i out of bounds")
+	return error('$i out of bounds')
 }
 
 struct Position {
-	mut: 
+mut:
 	x int
 	y int
 }
@@ -253,25 +268,30 @@ fn (p Position) str() string {
 }
 
 fn of(i []int) Position {
-	return Position{x: i[0], y: i[1]}
+	return Position{
+		x: i[0]
+		y: i[1]
+	}
 }
 
 fn (g Game) moves(s Square) []Square {
-	mut ret := []Square
-	
+	mut ret := []Square{}
+
 	// String -> Array dictionaries don't work for some reason
-	mut nn := []Position
-	mut ne := []Position
-	mut ee := []Position
-	mut se := []Position
-	mut ss := []Position
-	mut sw := []Position
-	mut ww := []Position
-	mut nw := []Position
+	mut nn := []Position{}
+	mut ne := []Position{}
+	mut ee := []Position{}
+	mut se := []Position{}
+	mut ss := []Position{}
+	mut sw := []Position{}
+	mut ww := []Position{}
+	mut nw := []Position{}
 
 	match s.piece.typ[0].str() {
-		' '  { return ret }
-		'k'  {
+		' ' {
+			return ret
+		}
+		'k' {
 			nn << of([0, 1])
 			ne << of([1, 1])
 			ee << of([1, 0])
@@ -281,7 +301,7 @@ fn (g Game) moves(s Square) []Square {
 			ww << of([-1, 0])
 			nw << of([-1, 1])
 		}
-		'q'  { 
+		'q' {
 			for i := 1; i < 8; i++ {
 				nn << of([0, i])
 				ne << of([i, i])
@@ -293,7 +313,7 @@ fn (g Game) moves(s Square) []Square {
 				nw << of([-i, i])
 			}
 		}
-		'r'  { 
+		'r' {
 			for i := 1; i < 8; i++ {
 				nn << of([0, i])
 				ee << of([i, 0])
@@ -301,7 +321,7 @@ fn (g Game) moves(s Square) []Square {
 				ww << of([-i, 0])
 			}
 		}
-		'b'  { 
+		'b' {
 			for i := 1; i < 8; i++ {
 				ne << of([i, i])
 				se << of([i, -i])
@@ -309,13 +329,13 @@ fn (g Game) moves(s Square) []Square {
 				nw << of([-i, i])
 			}
 		}
-		'n'  {
+		'n' {
 			ne << of([2, 1])
 			nw << of([-2, 1])
 			se << of([2, -1])
 			sw << of([-2, -1])
 		}
-		'p'  { 
+		'p' {
 			// TODO: pawn caps
 			if s.piece.color() == .white {
 				nn << of([-1, 0])
@@ -328,7 +348,7 @@ fn (g Game) moves(s Square) []Square {
 						nw << of([-1, -1])
 					}
 				}
-				
+
 				hit2 := g.at([s.x - 1, s.y + 1]) or { panic(err) }
 				if hit2.piece.typ != ' ' {
 					if hit2.piece.color() != s.piece.color() {
@@ -346,7 +366,7 @@ fn (g Game) moves(s Square) []Square {
 						nw << of([-1, -1])
 					}
 				}
-				
+
 				hit2 := g.at([s.x + 1, s.y + 1]) or { panic(err) }
 				if hit2.piece.typ != ' ' {
 					if hit2.piece.color() != s.piece.color() {
@@ -359,13 +379,11 @@ fn (g Game) moves(s Square) []Square {
 	}
 	for i in [nn, ne, ee, se, ss, sw, ww, nw] {
 		for m in i {
-			hit := g.at([s.x + m.x, s.y + m.y]) or {
-				break
-			}
+			hit := g.at([s.x + m.x, s.y + m.y]) or { break }
 			if hit.piece.typ == ' ' {
 				ret << hit
-			} else if hit.piece.color() != s.piece.color() && 
-				!(s.piece.typ[0].str() == 'p' && m.y == 0) {
+			} else if hit.piece.color() != s.piece.color() && !(s.piece.typ[0].str() == 'p'
+				&& m.y == 0) {
 				ret << hit
 				break
 			} else {
@@ -377,7 +395,7 @@ fn (g Game) moves(s Square) []Square {
 	return ret
 }
 
-fn (g mut Game) draw_square(s Square) {
+fn (mut g Game) draw_square(s Square) {
 	mut color := to_color(s.color)
 	mut _oy := t_offset_y
 	if s.equals(g.selected) && s.piece.typ != ' ' {
@@ -391,20 +409,20 @@ fn (g mut Game) draw_square(s Square) {
 	} else if s in g.highlighted {
 		color = highlight
 	}
-	g.gg.draw_rect((s.y) * block_size, (s.x) * block_size,
-					block_size - 1, block_size - 1, color)
-	g.ft.draw_text((s.y) * block_size + t_offset_x, (s.x) * block_size + _oy, 
-					pieces[s.piece.typ], text_cfg)
+	g.gg.draw_rect((s.y) * block_size, (s.x) * block_size, block_size - 1, block_size - 1,
+		color)
+	g.ft.draw_text((s.y) * block_size + t_offset_x, (s.x) * block_size + _oy, pieces[s.piece.typ],
+		text_cfg)
 }
 
-fn (g mut Game) render() {
+fn (mut g Game) render() {
 	for row in g.board {
 		for sq in row {
 			g.draw_square(sq)
 		}
 	}
 
-	g.ft.draw_text(block_size * 8, block_size, "Moves", text_cfg)
+	g.ft.draw_text(block_size * 8, block_size, 'Moves', text_cfg)
 
 	mut i := 1
 	for move in g.history {
@@ -416,7 +434,7 @@ fn (g mut Game) render() {
 
 	// g.gg.render()
 }
- 
+
 fn (g Game) run() {
 	for {
 		// glfw.post_empty_event() // force window redraw
@@ -424,24 +442,25 @@ fn (g Game) run() {
 	}
 }
 
-fn (g mut Game) handle_select() {
-	if g.highlighted.len == 0 {	
+fn (mut g Game) handle_select() {
+	if g.highlighted.len == 0 {
 		g.highlighted = g.moves(g.selected)
 	}
 }
 
-fn on_move(wnd voidptr, x, y f64) {
+fn on_move(wnd voidptr, x f64, y f64) {
 	mut game := &Game{} // glfw.get_window_user_pointer(wnd))
 
 	game.mouse_x = x
 	game.mouse_y = y
 }
+
 /*
- Access click method
+Access click method
  :param click button (0: left, 1: right, etc)
  :param on 0 -> off, 1 -> on
 */
-fn on_click(wnd voidptr, click, on int) {
+fn on_click(wnd voidptr, click int, on int) {
 	if on == 1 && click == 0 {
 		mut game := &Game{} // glfw.get_window_user_pointer(wnd))
 
@@ -454,27 +473,27 @@ fn on_click(wnd voidptr, click, on int) {
 				mut r := game.board[box_x]
 				r[box_y].piece.typ = game.selected.piece.typ
 
-				sx := game.selected.x 
-				sy := game.selected.y 
+				sx := game.selected.x
+				sy := game.selected.y
 				mut r2 := game.board[sx]
 				r2[sy].piece.typ = ' '
 
 				game.history << Move{
-					piece: game.selected.piece,
-					from: r2[sy],
-					to: r[box_y],
+					piece: game.selected.piece
+					from: r2[sy]
+					to: r[box_y]
 				}
 
 				game.selected = click_off
-				game.highlighted = []Square
+				game.highlighted = []Square{}
 			} else {
 				row := game.board[box_x] // no multiindexing (gh issue?)
-				game.highlighted = []Square
+				game.highlighted = []Square{}
 				game.selected = row[box_y]
 			}
 		} else {
 			game.selected = click_off
-			game.highlighted = []Square
+			game.highlighted = []Square{}
 		}
 
 		game.handle_select()
