@@ -1,21 +1,21 @@
 module main
 
-import glfw
+// import glfw
 import gg
 import gx
 import time
-import freetype
+// import freetype
 
 const (
-	BlockSize = 60 // pixels
-	T_OffsetX = BlockSize / 4 // offset for text
-	T_OffsetY = BlockSize / 2
-	FieldHeight = 8
-	FieldWidth = 8
-	WinWidth = BlockSize * (FieldWidth + 4)
-	WinHeight = BlockSize * FieldHeight
-	TimerPeriod = 250 // ms
-	TextSize = 12
+	block_size = 60 // pixels
+	t_offset_x = block_size / 4 // offset for text
+	t_offset_y = block_size / 2
+	field_height = 8
+	field_width = 8
+	win_width = block_size * (field_width + 4)
+	win_height = block_size * field_height
+	time_period = 250 // ms
+	text_size = 12
 
 	// n for knight (k for king)
 	pieces = {
@@ -35,7 +35,7 @@ const (
 
 	text_cfg = gx.TextCfg{
 		align: gx.ALIGN_LEFT
-		size:  TextSize
+		size:  text_size
 		color: gx.rgb(0, 0, 0)
 	}
 
@@ -56,7 +56,7 @@ const (
 
  :return ?string string if key was found, error if key was not found
 */
-fn rev_map(m map[string]int v int) ?string {
+fn rev_map(m map[string]int, v int) ?string {
 	for k in m.keys() {
 		if m[k] == v {
 			return k
@@ -86,8 +86,8 @@ enum Color_ {
 */
 fn flip(c Color_) Color_ {
 	match c {
-		.black => { return .white }
-		else   => { return .black }
+		.black { return .white }
+		else   { return .black }
 	}
 }
 
@@ -96,15 +96,15 @@ fn flip(c Color_) Color_ {
 */
 fn str(c Color_) string {
 	match c {
-		.black => { return ' ⬛ '}
-		else   => { return ' ⬜ '}
+		.black { return ' ⬛ '}
+		else   { return ' ⬜ '}
 	}
 }
 
 fn to_color(c Color_) gx.Color {
 	match c {
-		.black => { return gx.rgb(168, 173, 170)}
-		else   => { return gx.rgb(255, 255, 255)}
+		.black { return gx.rgb(168, 173, 170)}
+		else   { return gx.rgb(255, 255, 255)}
 	}
 }
 
@@ -121,8 +121,8 @@ fn (p Piece) str() string {
 
 fn (p Piece) color() Color_ {
 	match p.typ[1].str() {
-		'b' => { return .black }
-		else => { return .white }
+		'b' { return .black }
+		else { return .white }
 	}
 }
 
@@ -177,7 +177,7 @@ fn (m Move) str() string {
 struct Game {	
 	gg &gg.GG
 mut:
-	ft &freetype.Context
+	// ft &freetype.Context
 	board [][]Square
 	history []Move
 
@@ -270,8 +270,8 @@ fn (g Game) moves(s Square) []Square {
 	mut nw := []Position
 
 	match s.piece.typ[0].str() {
-		' ' => { return ret }
-		'k' => {
+		' '  { return ret }
+		'k'  {
 			nn << of([0, 1])
 			ne << of([1, 1])
 			ee << of([1, 0])
@@ -281,7 +281,7 @@ fn (g Game) moves(s Square) []Square {
 			ww << of([-1, 0])
 			nw << of([-1, 1])
 		}
-		'q' => { 
+		'q'  { 
 			for i := 1; i < 8; i++ {
 				nn << of([0, i])
 				ne << of([i, i])
@@ -293,7 +293,7 @@ fn (g Game) moves(s Square) []Square {
 				nw << of([-i, i])
 			}
 		}
-		'r' => { 
+		'r'  { 
 			for i := 1; i < 8; i++ {
 				nn << of([0, i])
 				ee << of([i, 0])
@@ -301,7 +301,7 @@ fn (g Game) moves(s Square) []Square {
 				ww << of([-i, 0])
 			}
 		}
-		'b' => { 
+		'b'  { 
 			for i := 1; i < 8; i++ {
 				ne << of([i, i])
 				se << of([i, -i])
@@ -309,13 +309,13 @@ fn (g Game) moves(s Square) []Square {
 				nw << of([-i, i])
 			}
 		}
-		'n' => {
+		'n'  {
 			ne << of([2, 1])
 			nw << of([-2, 1])
 			se << of([2, -1])
 			sw << of([-2, -1])
 		}
-		'p' => { 
+		'p'  { 
 			// TODO: pawn caps
 			if s.piece.color() == .white {
 				nn << of([-1, 0])
@@ -378,7 +378,7 @@ fn (g Game) moves(s Square) []Square {
 
 fn (g mut Game) draw_square(s Square) {
 	mut color := to_color(s.color)
-	mut _oy := T_OffsetY
+	mut _oy := t_offset_y
 	if s.equals(g.selected) && s.piece.typ != ' ' {
 		if s.color == .black {
 			color = dark_grey
@@ -390,9 +390,9 @@ fn (g mut Game) draw_square(s Square) {
 	} else if s in g.highlighted {
 		color = highlight
 	}
-	g.gg.draw_rect((s.y) * BlockSize, (s.x) * BlockSize,
-					BlockSize - 1, BlockSize - 1, color)
-	g.ft.draw_text((s.y) * BlockSize + T_OffsetX, (s.x) * BlockSize + _oy, 
+	g.gg.draw_rect((s.y) * block_size, (s.x) * block_size,
+					block_size - 1, block_size - 1, color)
+	g.ft.draw_text((s.y) * block_size + t_offset_x, (s.x) * block_size + _oy, 
 					pieces[s.piece.typ], text_cfg)
 }
 
@@ -403,14 +403,14 @@ fn (g mut Game) render() {
 		}
 	}
 
-	g.ft.draw_text(BlockSize * 8, BlockSize, "Moves", text_cfg)
+	g.ft.draw_text(block_size * 8, block_size, "Moves", text_cfg)
 
 	mut i := 1
 	for move in g.history {
 		i += 1
 		x := 8 + 2 * (i % 2)
 		y := i / 2 + 1
-		g.ft.draw_text(BlockSize * x, BlockSize * y, move.str(), text_cfg)
+		g.ft.draw_text(block_size * x, block_size * y, move.str(), text_cfg)
 	}
 
 	g.gg.render()
@@ -418,8 +418,8 @@ fn (g mut Game) render() {
  
 fn (g Game) run() {
 	for {
-		glfw.post_empty_event() // force window redraw
-		time.sleep_ms(TimerPeriod)
+		// glfw.post_empty_event() // force window redraw
+		time.sleep_ms(time_period)
 	}
 }
 
@@ -430,7 +430,7 @@ fn (g mut Game) handle_select() {
 }
 
 fn on_move(wnd voidptr, x, y f64) {
-	mut game := &Game(glfw.get_window_user_pointer(wnd))
+	mut game := &Game{} // glfw.get_window_user_pointer(wnd))
 
 	game.mouse_x = x
 	game.mouse_y = y
@@ -442,10 +442,10 @@ fn on_move(wnd voidptr, x, y f64) {
 */
 fn on_click(wnd voidptr, click, on int) {
 	if on == 1 && click == 0 {
-		mut game := &Game(glfw.get_window_user_pointer(wnd))
+		mut game := &Game{} // glfw.get_window_user_pointer(wnd))
 
-		box_y := int(game.mouse_x / BlockSize)
-		box_x := int(game.mouse_y / BlockSize)
+		box_y := int(game.mouse_x / block_size)
+		box_x := int(game.mouse_y / block_size)
 
 		if box_x != game.selected.x || box_y != game.selected.y {
 			hit := game.at([box_x, box_y]) or { panic(err) }
@@ -481,26 +481,27 @@ fn on_click(wnd voidptr, click, on int) {
 }
 
 fn main() {
-	glfw.init_glfw()
+	// glfw.init_glfw()
 
 	mut game := Game{
 		gg: gg.new_context(gg.Cfg {
-			width: WinWidth
-			height: WinHeight
+			width: win_width
+			height: win_height
 			use_ortho: true // This is needed for 2D drawing
 			create_window: true
 			window_title: 'V Chess'
+			fpath: 'RobotoMono-Regular.ttf'
 			// window_user_ptr: &game
 		})
 	}
 
-	game.ft = freetype.new_context(gg.Cfg{
-		width: WinWidth
-		height: WinHeight
-		use_ortho: true
-		font_size: 54
-		scale: 2
-	})
+	// game.ft = freetype.new_context(gg.Cfg{
+	// 	width: win_width
+	// 	height: win_height
+	// 	use_ortho: true
+	// 	font_size: 54
+	// 	scale: 2
+	// })
 
 	game.gg.window.set_user_ptr(&game)
 	game.initialize_game()
