@@ -34,7 +34,7 @@ const (
 	}
 
 	text_cfg = gx.TextCfg{
-		align: gx.ALIGN_LEFT
+		align: .left
 		size:  text_size
 		color: gx.rgb(0, 0, 0)
 	}
@@ -149,7 +149,7 @@ fn (s Square) equals(other Square) bool {
 
 fn (a []Square) contains (s Square) bool {
 	for i in a {
-		if (i.equals(s)) {
+		if i.equals(s) {
 			return true
 		}
 	}
@@ -175,7 +175,7 @@ fn (m Move) str() string {
 }
 
 struct Game {	
-	gg &gg.GG
+	gg &gg.Context = voidptr(0)
 mut:
 	// ft &freetype.Context
 	board [][]Square
@@ -355,6 +355,7 @@ fn (g Game) moves(s Square) []Square {
 				}
 			}
 		}
+		else {}
 	}
 	for i in [nn, ne, ee, se, ss, sw, ww, nw] {
 		for m in i {
@@ -413,7 +414,7 @@ fn (g mut Game) render() {
 		g.ft.draw_text(block_size * x, block_size * y, move.str(), text_cfg)
 	}
 
-	g.gg.render()
+	// g.gg.render()
 }
  
 fn (g Game) run() {
@@ -484,15 +485,15 @@ fn main() {
 	// glfw.init_glfw()
 
 	mut game := Game{
-		gg: gg.new_context(gg.Cfg {
+		gg: gg.new_context(
 			width: win_width
 			height: win_height
 			use_ortho: true // This is needed for 2D drawing
 			create_window: true
 			window_title: 'V Chess'
-			fpath: 'RobotoMono-Regular.ttf'
+			font_path: 'RobotoMono-Regular.ttf'
 			// window_user_ptr: &game
-		})
+		)
 	}
 
 	// game.ft = freetype.new_context(gg.Cfg{
