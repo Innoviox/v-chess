@@ -158,8 +158,9 @@ fn (a []Square) contains(s Square) bool {
 	return false
 }
 
-fn (s Square) + (b []int) []int {
-	return add([s.x, s.y], b)
+fn (s Square) + (b Square) []int {
+	// return add([s.x, s.y], b)
+	return [s.x + b.x, s.y + b.y]
 }
 
 const (
@@ -397,21 +398,21 @@ fn (g Game) moves(s Square) []Square {
 
 fn (mut g Game) draw_square(s Square) {
 	mut color := to_color(s.color)
-	mut _oy := t_offset_y
+	mut oy := t_offset_y
 	if s.equals(g.selected) && s.piece.typ != ' ' {
 		if s.color == .black {
 			color = dark_grey
 		} else {
 			color = dark_white
 		}
-		_oy -= 5
+		oy -= 5
 		g.moves(s)
 	} else if s in g.highlighted {
 		color = highlight
 	}
 	g.gg.draw_rect((s.y) * block_size, (s.x) * block_size, block_size - 1, block_size - 1,
 		color)
-	g.ft.draw_text((s.y) * block_size + t_offset_x, (s.x) * block_size + _oy, pieces[s.piece.typ],
+	g.ft.draw_text((s.y) * block_size + t_offset_x, (s.x) * block_size + oy, pieces[s.piece.typ],
 		text_cfg)
 }
 
@@ -438,7 +439,7 @@ fn (mut g Game) render() {
 fn (g Game) run() {
 	for {
 		// glfw.post_empty_event() // force window redraw
-		time.sleep_ms(time_period)
+		time.sleep(time_period * time.millisecond)
 	}
 }
 
