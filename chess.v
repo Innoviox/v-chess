@@ -184,9 +184,10 @@ fn (m Move) str() string {
 }
 
 struct Game {
-	gg &gg.Context = voidptr(0)
 mut:
+	gg &gg.Context = voidptr(0)
 	// ft &freetype.Context
+	
 	board   [][]Square
 	history []Move
 
@@ -412,25 +413,25 @@ fn (mut g Game) draw_square(s Square) {
 	}
 	g.gg.draw_rect((s.y) * block_size, (s.x) * block_size, block_size - 1, block_size - 1,
 		color)
-	g.ft.draw_text((s.y) * block_size + t_offset_x, (s.x) * block_size + oy, pieces[s.piece.typ],
+	g.gg.draw_text((s.y) * block_size + t_offset_x, (s.x) * block_size + oy, pieces[s.piece.typ],
 		text_cfg)
 }
 
-fn (mut g Game) render() {
+fn render(mut g Game) {
 	for row in g.board {
 		for sq in row {
 			g.draw_square(sq)
 		}
 	}
 
-	g.ft.draw_text(block_size * 8, block_size, 'Moves', text_cfg)
+	g.gg.draw_text(block_size * 8, block_size, 'Moves', text_cfg)
 
 	mut i := 1
 	for move in g.history {
 		i += 1
 		x := 8 + 2 * (i % 2)
 		y := i / 2 + 1
-		g.ft.draw_text(block_size * x, block_size * y, move.str(), text_cfg)
+		g.gg.draw_text(block_size * x, block_size * y, move.str(), text_cfg)
 	}
 
 	// g.gg.render()
@@ -449,8 +450,8 @@ fn (mut g Game) handle_select() {
 	}
 }
 
-fn on_move(wnd voidptr, x f64, y f64) {
-	mut game := &Game{} // glfw.get_window_user_pointer(wnd))
+fn (mut game Game) on_move(x f64, y f64) {
+	// mut game := &Game{gg: 0} // glfw.get_window_user_pointer(wnd))
 
 	game.mouse_x = x
 	game.mouse_y = y
@@ -461,9 +462,9 @@ Access click method
  :param click button (0: left, 1: right, etc)
  :param on 0 -> off, 1 -> on
 */
-fn on_click(wnd voidptr, click int, on int) {
+fn (mut game Game) on_click(click int, on int) {
 	if on == 1 && click == 0 {
-		mut game := &Game{} // glfw.get_window_user_pointer(wnd))
+		// mut game := &Game{gg: 0} // glfw.get_window_user_pointer(wnd))
 
 		box_y := int(game.mouse_x / block_size)
 		box_x := int(game.mouse_y / block_size)
@@ -501,20 +502,37 @@ fn on_click(wnd voidptr, click int, on int) {
 	}
 }
 
+fn on_event(e &gg.Event, mut game Game) {
+	if e.typ == .touches_ended {
+		if e.num_touches > 0 {
+			touch_point := e.touches[0]
+			game.on_click()
+		}
+	} else if e.typ == .touches_moved {
+		game.on_move()
+	}
+}
+
 fn main() {
 	// glfw.init_glfw()
 
 	mut game := Game{
-		gg: gg.new_context(
-			width: win_width
-			height: win_height
-			use_ortho: true // This is needed for 2D drawing
-			create_window: true
-			window_title: 'V Chess'
-			font_path: 'RobotoMono-Regular.ttf'
-			// window_user_ptr: &game
-		)
+		gg: 0
 	}
+
+	game.gg = gg.new_context(
+		bg_color: gx.white
+		width: win_width
+		height: win_height
+		use_ortho: true // This is needed for 2D drawing
+		create_window: true
+		window_title: 'V Chess'
+		user_data: game
+		frame_fn: render
+		event_fn: on_event
+		font_path: 'RobotoMono-Regular.ttf'
+		// window_user_ptr: &game
+	)
 
 	// game.ft = freetype.new_context(gg.Cfg{
 	// 	width: win_width
@@ -524,22 +542,23 @@ fn main() {
 	// 	scale: 2
 	// })
 
-	game.gg.window.set_user_ptr(&game)
+	// game.gg.window.set_user_ptr(&game)
 	game.initialize_game()
 
-	game.gg.window.on_click(on_click)
-	game.gg.window.onmousemove(on_move)
+	// game.gg.window.on_click(on_click)
+	// game.gg.window.onmousemove(on_move)
 
 	go game.run()
+	game.gg.run()
 
-	for {
-		gg.clear(gx.White)
-		game.render()
-		if game.gg.window.should_close() {
-			game.gg.window.destroy()
-			return
-		}
-	}
+	// for {
+	// 	gg.clear(gx.White)
+	// 	game.render()
+	// 	if game.gg.window.should_close() {
+	// 		game.gg.window.destroy()
+	// 		return
+	// 	}
+	// }
 
 	return
 }
