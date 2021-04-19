@@ -187,7 +187,7 @@ struct Game {
 mut:
 	gg &gg.Context = voidptr(0)
 	// ft &freetype.Context
-	
+
 	board   [][]Square
 	history []Move
 
@@ -450,19 +450,19 @@ fn (mut g Game) handle_select() {
 	}
 }
 
-fn (mut game Game) on_move(x f64, y f64) {
-	// mut game := &Game{gg: 0} // glfw.get_window_user_pointer(wnd))
+// fn (mut game Game) on_move(x f64, y f64) {
+// 	// mut game := &Game{gg: 0} // glfw.get_window_user_pointer(wnd))
 
-	game.mouse_x = x
-	game.mouse_y = y
-}
+// 	game.mouse_x = x
+// 	game.mouse_y = y
+// }
 
 /*
 Access click method
  :param click button (0: left, 1: right, etc)
  :param on 0 -> off, 1 -> on
 */
-fn (mut game Game) on_click(click int, on int) {
+fn (mut game Game) on_click(x f32, y f32, click int, on int) {
 	if on == 1 && click == 0 {
 		// mut game := &Game{gg: 0} // glfw.get_window_user_pointer(wnd))
 
@@ -504,12 +504,7 @@ fn (mut game Game) on_click(click int, on int) {
 
 fn on_event(e &gg.Event, mut game Game) {
 	if e.typ == .touches_ended {
-		if e.num_touches > 0 {
-			touch_point := e.touches[0]
-			game.on_click()
-		}
-	} else if e.typ == .touches_moved {
-		game.on_move()
+		game.on_click(e.mouse_x, e.mouse_y, int(e.mouse_button), 1)
 	}
 }
 
@@ -527,7 +522,7 @@ fn main() {
 		use_ortho: true // This is needed for 2D drawing
 		create_window: true
 		window_title: 'V Chess'
-		user_data: game
+		// user_data: game
 		frame_fn: render
 		event_fn: on_event
 		font_path: 'RobotoMono-Regular.ttf'
